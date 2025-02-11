@@ -4,37 +4,37 @@ import sys
 import tkinter as tk
 from tkinter import simpledialog
 
-# Constants for game dimensions
+
 ROW_COUNT = 6
 COLUMN_COUNT = 7
-SQUARE_SIZE = 100  # Size of each cell
+SQUARE_SIZE = 100 
 RADIUS = SQUARE_SIZE // 2 - 5
-ANIMATION_SPEED = 15  # Speed of the falling animation
+ANIMATION_SPEED = 15
 
-# Colors
+
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
-# Initialize Pygame
+
 pygame.init()
 
-# Set screen size
+
 width = COLUMN_COUNT * SQUARE_SIZE
-height = (ROW_COUNT + 1) * SQUARE_SIZE  # Extra row for UI interaction
+height = (ROW_COUNT + 1) * SQUARE_SIZE
 size = (width, height)
 screen = pygame.display.set_mode(size)
 
 
-# Create board using NumPy
+
 def create_board():
     return np.zeros((ROW_COUNT, COLUMN_COUNT), dtype=int)
 
 
-# Draw the game board
+
 def draw_board(board):
-    screen.fill(BLACK)  # Clear screen
+    screen.fill(BLACK)
     for row in range(ROW_COUNT):
         for col in range(COLUMN_COUNT):
             pygame.draw.rect(screen, BLUE, (col * SQUARE_SIZE, (row + 1) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
@@ -54,12 +54,10 @@ def draw_board(board):
     pygame.display.update()
 
 
-# Check if a column has space for a move
 def is_valid_move(board, col):
-    return board[ROW_COUNT - 1][col] == 0  # Check top row
+    return board[ROW_COUNT - 1][col] == 0
 
 
-# Find the lowest available row in a column
 def get_next_open_row(board, col):
     for row in range(ROW_COUNT):
         if board[row][col] == 0:
@@ -67,51 +65,49 @@ def get_next_open_row(board, col):
     return None
 
 
-# Animate the falling piece
 def animate_piece(board, col, piece):
     row = get_next_open_row(board, col)
     if row is None:
-        return  # No space in the column
+        return
 
     x_pos = col * SQUARE_SIZE + SQUARE_SIZE // 2
-    y_pos = SQUARE_SIZE // 2  # Start from the top
+    y_pos = SQUARE_SIZE // 2
     final_y_pos = height - (row * SQUARE_SIZE) - SQUARE_SIZE // 2
 
     while y_pos < final_y_pos:
-        screen.fill(BLACK)  # Clear screen before drawing
-        draw_board(board)  # Draw static pieces
+        screen.fill(BLACK)
+        draw_board(board)
 
-        # Draw the falling piece
+        
         pygame.draw.circle(screen, RED if piece == 1 else YELLOW, (x_pos, y_pos), RADIUS)
 
         pygame.display.update()
-        y_pos += ANIMATION_SPEED  # Move down by animation speed
-        pygame.time.delay(5)  # Small delay for smoother animation
+        y_pos += ANIMATION_SPEED
+        pygame.time.delay(5)
 
-    board[row][col] = piece  # Place piece in final position
-    draw_board(board)  # Redraw the board
+    board[row][col] = piece
+    draw_board(board)
 
 
 def check_win(board, piece):
-    # Check horizontal locations
+    
     for row in range(ROW_COUNT):
         for col in range(COLUMN_COUNT - 3):
             if all(board[row][col + i] == piece for i in range(4)):
                 return True
 
-    # Check vertical locations
+
     for row in range(ROW_COUNT - 3):
         for col in range(COLUMN_COUNT):
             if all(board[row + i][col] == piece for i in range(4)):
                 return True
 
-    # Check positively sloped diagonals
+
     for row in range(ROW_COUNT - 3):
         for col in range(COLUMN_COUNT - 3):
             if all(board[row + i][col + i] == piece for i in range(4)):
                 return True
 
-    # Check negatively sloped diagonals
     for row in range(3, ROW_COUNT):
         for col in range(COLUMN_COUNT - 3):
             if all(board[row - i][col + i] == piece for i in range(4)):
@@ -125,14 +121,14 @@ def evaluate_window(window, piece):
     score = 0
 
     if window.count(piece) == 4:
-        score += 100  # Winning move
+        score += 100  
     elif window.count(piece) == 3 and window.count(0) == 1:
-        score += 5  # Almost winning move
+        score += 5  
     elif window.count(piece) == 2 and window.count(0) == 2:
-        score += 2  # Decent position
+        score += 2  
 
     if window.count(opponent_piece) == 3 and window.count(0) == 1:
-        score -= 4  # Block opponent’s almost winning move
+        score -= 4
 
     return score
 
@@ -141,11 +137,11 @@ def evaluate_board(board, piece):
     opponent_piece = 1 if piece == 2 else 2
     score = 0
 
-    # Center column preference (AI should play near the center)
+    
     center_array = [board[row][COLUMN_COUNT // 2] for row in range(ROW_COUNT)]
     score += center_array.count(piece) * 3  # Give extra points for center plays
 
-    # Score horizontal, vertical, and diagonal sequences
+    
     for row in range(ROW_COUNT):
         for col in range(COLUMN_COUNT - 3):
             window = [board[row][col + i] for i in range(4)]
@@ -177,10 +173,10 @@ def drop_piece(board, col, piece):
 
 class MinimaxNode:
     def __init__(self, column, score=None, depth=0, pruned = False):
-        self.column = column  # Column chosen at this node
-        self.score = score  # Score at this node (if leaf)
-        self.children = []  # Subnodes (possible future moves)
-        self.depth = depth  # Tree depth (for formatting)
+        self.column = column
+        self.score = score
+        self.children = []
+        self.depth = depth  
         self.pruned=pruned
 
     def add_child(self, child_node):
@@ -188,7 +184,7 @@ class MinimaxNode:
 
     def visualize(self, indent=0):
         """ Recursively prints the tree structure """
-        prefix = "  " * indent  # Indentation for hierarchy
+        prefix = "  " * indent
         if self.pruned:
             node_info = f"[PRUNED] Node(Column: {self.column}, Score: {self.score})"
         else:
@@ -196,24 +192,24 @@ class MinimaxNode:
         print(prefix + node_info)
 
         for child in self.children:
-            child.visualize(indent + 1)  # Recursive call with more indent
+            child.visualize(indent + 1)
 
 
 def minimax(board, depth, maximizingPlayer, level=0):
     valid_columns = [col for col in range(COLUMN_COUNT) if is_valid_move(board, col)]
-    current_node = MinimaxNode(column=None, depth=level)  # Root node
+    current_node = MinimaxNode(column=None, depth=level)
 
-    # Base case: check for terminal state (win/loss/draw)
-    if check_win(board, 2):  # AI wins
+    
+    if check_win(board, 2): 
         return MinimaxNode(column=None, score=100000, depth=level)
-    elif check_win(board, 1):  # Player wins
+    elif check_win(board, 1):  
         return MinimaxNode(column=None, score=-100000, depth=level)
-    elif len(valid_columns) == 0:  # No more moves (draw)
+    elif len(valid_columns) == 0:  
         return MinimaxNode(column=None, score=0, depth=level)
-    elif depth == 0:  # Depth limit reached
+    elif depth == 0:  
         return MinimaxNode(column=None, score=evaluate_board(board, 2), depth=level)
 
-    if maximizingPlayer:  # AI's turn (maximize)
+    if maximizingPlayer:
         best_score = -float("inf")
         best_col = valid_columns[0]
 
@@ -233,7 +229,7 @@ def minimax(board, depth, maximizingPlayer, level=0):
         current_node.score = best_score
         return current_node
 
-    else:  # Human's turn (minimize)
+    else: 
         best_score = float("inf")
         best_col = valid_columns[0]
 
@@ -256,19 +252,19 @@ def minimax(board, depth, maximizingPlayer, level=0):
 
 def minimax_alpha_beta(board, depth, alpha, beta, maximizingPlayer, level=0):
     valid_columns = [col for col in range(COLUMN_COUNT) if is_valid_move(board, col)]
-    current_node = MinimaxNode(column=None, depth=level)  # Root node
+    current_node = MinimaxNode(column=None, depth=level) 
 
-    # Base case: check for terminal state (win/loss/draw)
-    if check_win(board, 2):  # AI wins
+    
+    if check_win(board, 2): 
         return MinimaxNode(column=None, score=100000, depth=level)
-    elif check_win(board, 1):  # Player wins
+    elif check_win(board, 1):  
         return MinimaxNode(column=None, score=-100000, depth=level)
-    elif len(valid_columns) == 0:  # No more moves (draw)
+    elif len(valid_columns) == 0:  
         return MinimaxNode(column=None, score=0, depth=level)
-    elif depth == 0:  # Depth limit reached
+    elif depth == 0:  
         return MinimaxNode(column=None, score=evaluate_board(board, 2), depth=level)
 
-    if maximizingPlayer:  # AI's turn (maximize)
+    if maximizingPlayer:  
         best_score = -float("inf")
         best_col = valid_columns[0]
 
@@ -284,19 +280,19 @@ def minimax_alpha_beta(board, depth, alpha, beta, maximizingPlayer, level=0):
                 best_score = child_node.score
                 best_col = col
 
-            alpha = max(alpha, best_score)  # Update alpha
+            alpha = max(alpha, best_score)  
 
             if alpha >= beta:
-                # **Mark this node as pruned**
+               
                 pruned_node = MinimaxNode(column=col, score=None, depth=level + 1, pruned=True)
                 current_node.add_child(pruned_node)
-                break  # Prune remaining branches
+                break 
 
         current_node.column = best_col
         current_node.score = best_score
         return current_node
 
-    else:  # Human's turn (minimize)
+    else:
         best_score = float("inf")
         best_col = valid_columns[0]
 
@@ -312,13 +308,13 @@ def minimax_alpha_beta(board, depth, alpha, beta, maximizingPlayer, level=0):
                 best_score = child_node.score
                 best_col = col
 
-            beta = min(beta, best_score)  # Update beta
+            beta = min(beta, best_score)
 
             if beta <= alpha:
-                # **Mark this node as pruned**
+                
                 pruned_node = MinimaxNode(column=col, score=None, depth=level + 1, pruned=True)
                 current_node.add_child(pruned_node)
-                break  # Prune remaining branches
+                break  
 
         current_node.column = best_col
         current_node.score = best_score
@@ -341,9 +337,9 @@ def show_game_over_screen(winner):
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:  # Restart the game
+                if event.key == pygame.K_r:
                     return True
-                if event.key == pygame.K_q:  # Quit the game
+                if event.key == pygame.K_q:
                     pygame.quit()
                     sys.exit()
         pygame.time.delay(100)
@@ -375,7 +371,7 @@ def main():
     while True:
         board = create_board()
         game_over = False
-        turn = 0  # 0 = Human, 1 = AI
+        turn = 0  
 
         draw_board(board)
 
@@ -385,54 +381,54 @@ def main():
                     pygame.quit()
                     sys.exit()
 
-                # Human player input
+                
                 if turn == 0 and event.type == pygame.MOUSEBUTTONDOWN:
-                    x_pos = event.pos[0]  # Get x-coordinate of click
-                    col = x_pos // SQUARE_SIZE  # Determine which column was clicked
+                    x_pos = event.pos[0]
+                    col = x_pos // SQUARE_SIZE
 
                     if is_valid_move(board, col):
-                        animate_piece(board, col, 1)  # Animate piece drop for Player
+                        animate_piece(board, col, 1)
                         if check_win(board, 1):
                             pygame.time.delay(3000)
                             if show_game_over_screen("Player"):
-                                break  # Restart game
+                                break
                             else:
-                                return  # Quit game
-                        turn = 1  # Switch to AI
+                                return
+                        turn = 1
 
-            # AI player move
+            
             if turn == 1 and not game_over:
-                pygame.time.delay(1000)  # Small delay for realism
+                pygame.time.delay(1000)
 
                 if ai_mode == "minimax":
                     tree = minimax(board, 4, True)
-                    chosen_col = tree.column  # Best move from Minimax
+                    chosen_col = tree.column
                 elif ai_mode == "alpha_beta":
                     tree = minimax_alpha_beta(board, 4, -float("inf"), float("inf"), True)
-                    chosen_col = tree.column  # Best move from Alpha-Beta
+                    chosen_col = tree.column
                 elif ai_mode == "expected_minimax":
-                    tree = minimax(board, 4, True)  # Use normal Minimax first
-                    best_col = tree.column  # Best move from Minimax
+                    tree = minimax(board, 4, True)
+                    best_col = tree.column  
 
-                    # Possible moves with probabilities
-                    possible_moves = [best_col]  # 60% probability
+                    
+                    possible_moves = [best_col]
                     probabilities = [0.6]
 
-                    # Check if left move is valid
+                    
                     if best_col > 0 and is_valid_move(board, best_col - 1):
                         possible_moves.append(best_col - 1)
                         probabilities.append(0.2)
 
-                    # Check if right move is valid
+                    
                     if best_col < COLUMN_COUNT - 1 and is_valid_move(board, best_col + 1):
                         possible_moves.append(best_col + 1)
                         probabilities.append(0.2)
 
-                    # Normalize probabilities (if only 2 moves are possible)
+                  
                     probabilities = np.array(probabilities)
                     probabilities /= probabilities.sum()
 
-                    # Select column based on probability
+                    
                     chosen_col = np.random.choice(possible_moves, p=probabilities)
                 else:
                     raise ValueError("Invalid AI mode selected.")
@@ -440,23 +436,18 @@ def main():
                 print("\nMinimax Decision Tree:")
                 tree.visualize()
 
-                # Drop AI piece in chosen column
+                
                 if is_valid_move(board, chosen_col):
-                    animate_piece(board, chosen_col, 2)  # Animate AI move
+                    animate_piece(board, chosen_col, 2)
                     if check_win(board, 2):
                         pygame.time.delay(3000)
                         if show_game_over_screen("AI"):
-                            break  # Restart game
+                            break
                         else:
-                            return  # Quit game
-                    turn = 0  # Switch back to Human
+                            return
+                    turn = 0 
 
 
-  # Print the tree structure
-
-
-
-# Run the game
 
 
 if __name__ == "__main__":
